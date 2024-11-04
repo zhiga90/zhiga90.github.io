@@ -1,0 +1,72 @@
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="importmap">
+        {
+          "imports": {
+            "@google/generative-ai": "https://esm.run/@google/generative-ai"
+          }
+        }
+      </script>
+</head>
+
+<body>
+
+    <div id="app" class="flex flex-col h-full max-w-md mx-auto">
+        <div class="grow-0 p-3">
+            <form @submit.prevent="submit">
+                <input v-model="message" type="text" class="p-3 border rounded-full w-full"
+                    placeholder="Введите запрос и нажмите Enter">
+            </form>
+        </div>
+        <div class="grow relative">
+            <div class="absolute top-0 left-0 w-full h-full overflow-y-scroll p-3">
+                <div v-if="isLoading"
+                    class="animate-spin mx-auto rounded-full h-16 w-16 border-t-4 border-primary border-opacity-70">
+                </div>
+                <div v-else-if="error">{{error}}</div>
+                <div v-else-if="result && result.response">
+                    <div class="mb-3">{{result.response.candidates[0].content.parts[0].text}}</div>
+                    <pre class="w-full whitespace-normal">{{result}}</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        const { createApp, ref, onMounted } = Vue
+        import { GoogleGenerativeAI } from "@google/generative-ai";
+        const GOOGLE_API_KEY = 'AIzaSyCsFaoB2IZI6evIu0dxd3b_Az2MsEykz_4'
+        const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        createApp({
+            setup() {
+                const message = ref('')
+                const isLoading = ref(false)
+                const error = ref('')
+                const result = ref('')
+                const submit = async () => {
+                    isLoading.value = true
+                    error.value = ''
+                    try {
+                        result.value = await model.generateContent(message.value);
+                    } catch(e) {
+                        error.value = 'ошибка'
+                    } finally {
+                        isLoading.value = false
+                    }
+                }
+                return {
+                    message, isLoading, result, submit
+                }
+            }
+        }).mount('#app')
+    </script>
+</body>
+
+</html>
